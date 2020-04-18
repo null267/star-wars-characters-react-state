@@ -11,26 +11,33 @@ import endpoint from './endpoint';
 
 import './styles.scss';
 
-const Application = () => {
-  const [characters, setCharacters] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const useFetch = url => {
+    const [response, setResponse] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  React.useEffect(() => {
-    setLoading(true);
-    setCharacters([]);
-    setError(null);
-    fetch(endpoint + '/characters')
-      .then(response => response.json())
-      .then(response => {
-        setLoading(false);
-        setCharacters(response.characters);
-      })
-      .catch(error => {
-        setLoading(false);
-        setError(error);
-      });
-  }, []);
+    React.useEffect(() => {
+      setLoading(true);
+      setResponse(null);
+      setError(null);
+      fetch(endpoint + '/characters')
+        .then(response => response.json())
+        .then(response => {
+          setLoading(false);
+          setResponse(response);
+        })
+        .catch(error => {
+          setLoading(false);
+          setError(error);
+        });
+    }, []);
+    return [response, loading, error];
+  }
+
+const Application = () => {
+  const [response, loading, error] = useFetch(endpoint + '/characters');
+  const characters = (response && response.characters) || [];
+  
 
   return (
     <div className="Application">
