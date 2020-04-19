@@ -1,16 +1,21 @@
-import React, { useReducer } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 
 import CharacterList from './CharacterList';
+import CharacterView from './CharacterView';
 
 import endpoint from './endpoint';
 
 import './styles.scss';
 
+const FETCHING = 'FETCHING';
+const RESPONSE_COMPLETE = 'RESPONSE_COMPLETE';
+const ERROR = 'ERROR';
+
 const reducer = (state, action) => {
-  if (action.type === 'FETCHING') {
+  if (action.type === FETCHING) {
     return {
       characters: [],
       loading: true,
@@ -18,7 +23,7 @@ const reducer = (state, action) => {
     };
   }
 
-  if (action.type === 'RESPONSE_COMPLETE') {
+  if (action.type === RESPONSE_COMPLETE) {
     return {
       characters: action.payload.characters,
       loading: false,
@@ -26,7 +31,7 @@ const reducer = (state, action) => {
     };
   }
 
-  if (action.type === 'ERROR') {
+  if (action.type === ERROR) {
     return {
       characters: [],
       loading: false,
@@ -43,9 +48,37 @@ const initialState = {
   characters: [],
 };
 
-const Application = () => {
+const fetchCharacters = (dispatch) => {
+  fetch(endpoint + '/characters')
+    .then(response => response.json())
+    .then(response => dispatch({ 
+      type: RESPONSE_COMPLETE,
+      payload: { characters: response.characters },
+    }))
+    .catch(error => dispatch({
+      type: ERROR,
+      payload: { error },
+    }))
+}
+
+const useThunkReducer = (reducer, initialState) => {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  const thunkDispatch = React.useCallback(action => {
+    if (typeof action === 'function') {
+      action(dispatch);
+    } else dispatch(action);
+  },[dispatch]);
+  return [state,thunkDispatch];
+}
+
+const Application = () => {
+  const [state, dispatch] = useThunkReducer(reducer, initialState);
   const { characters } = state;
+
+  // useEffect(() => {
+  //   dispatch(dispatch => {});
+  // },[]);
 
   return (
     <div className="Application">
@@ -54,8 +87,11 @@ const Application = () => {
       </header>
       <main>
         <section className="sidebar">
-          <button onClick={() => {}}>Fetch Characters</button>
+          <button onClick={() => {dispatch(fetchCharacters)}}>Fetch Characters</button>
           <CharacterList characters={characters} />
+        </section>
+        <section className="CharacterView">
+          <Route path="/characters/:id" component={CharacterView} />
         </section>
       </main>
     </div>
